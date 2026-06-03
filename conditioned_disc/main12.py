@@ -125,7 +125,7 @@ def process_switchgear_disc(image_path):
     vis[black_mask_bool] = [0, 0, 0]
 
     vis = cv2.bitwise_and(vis, vis, mask=mask)
-    cv2.imwrite("images12/4_final_segmentation.jpg", vis)
+    cv2.imwrite("images12/4_final_segmentation_circle.jpg", vis)
 
     # ==========================================
     # Output Calculations
