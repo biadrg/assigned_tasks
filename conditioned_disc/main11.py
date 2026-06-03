@@ -3,9 +3,10 @@ import cv2
 import numpy as np
 from sklearn.cluster import KMeans
 
+
 def process_switchgear_disc(image_path):
-    if not os.path.exists("images"):
-        os.makedirs("images")
+    if not os.path.exists("res"):
+        os.makedirs("res")
 
     img = cv2.imread(image_path)
     if img is None:
@@ -20,8 +21,14 @@ def process_switchgear_disc(image_path):
     # ==========================================
     blur = cv2.GaussianBlur(img_gray, (9, 9), 2)
     circles = cv2.HoughCircles(
-        blur, cv2.HOUGH_GRADIENT, dp=1, minDist=height // 2,
-        param1=50, param2=30, minRadius=0, maxRadius=0
+        blur,
+        cv2.HOUGH_GRADIENT,
+        dp=1,
+        minDist=height // 2,
+        param1=50,
+        param2=30,
+        minRadius=0,
+        maxRadius=0,
     )
 
     mask = np.zeros_like(img_gray)
@@ -32,7 +39,7 @@ def process_switchgear_disc(image_path):
 
     mask_bool = mask > 0
     img_masked = cv2.bitwise_and(img, img, mask=mask)
-    cv2.imwrite("images/1_masked_disc.jpg", img_masked)
+    cv2.imwrite("res/1_masked_disc.jpg", img_masked)
 
     # ==========================================
     # 2. Aggressive Contrast Enhancement
@@ -40,17 +47,21 @@ def process_switchgear_disc(image_path):
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
     img_clahe = clahe.apply(img_gray)
     img_clahe_masked = cv2.bitwise_and(img_clahe, img_clahe, mask=mask)
-    cv2.imwrite("images/2_high_contrast.jpg", img_clahe_masked)
+    cv2.imwrite("res/2_high_contrast.jpg", img_clahe_masked)
 
     # ==========================================
     # 3. Robust Black Groove Isolation (Fixed)
     # ==========================================
     # Use Adaptive Gaussian Thresholding to catch grooves despite uneven lighting
     thresh = cv2.adaptiveThreshold(
-        img_gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
-        cv2.THRESH_BINARY_INV, blockSize=21, C=10
+        img_gray,
+        255,
+        cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+        cv2.THRESH_BINARY_INV,
+        blockSize=21,
+        C=10,
     )
-    
+
     # Restrict the thresholded lines to the inside of the disc
     thresh = cv2.bitwise_and(thresh, thresh, mask=mask)
 
@@ -61,7 +72,7 @@ def process_switchgear_disc(image_path):
     # Dilate heavily to create the safety buffer over the transition edges
     kernel_buffer = np.ones((5, 5), np.uint8)
     black_mask_dilated = cv2.dilate(cleaned_grooves, kernel_buffer, iterations=2)
-    cv2.imwrite("images/3_black_grooves_mask.jpg", black_mask_dilated)
+    cv2.imwrite("res/3_black_grooves_mask.jpg", black_mask_dilated)
 
     black_mask_bool = black_mask_dilated > 0
 
@@ -84,8 +95,8 @@ def process_switchgear_disc(image_path):
     labels_full = np.full(img_gray.shape, -1)
     labels_full[surface_mask] = labels
 
-    unconditioned_mask = (labels_full == unconditioned_lbl)
-    shiny_mask = (labels_full == shiny_lbl)
+    unconditioned_mask = labels_full == unconditioned_lbl
+    shiny_mask = labels_full == shiny_lbl
 
     # Visualisation map
     vis = np.zeros((height, width, 3), dtype=np.uint8)
@@ -93,21 +104,21 @@ def process_switchgear_disc(image_path):
     # Apply colours mapping
     vis[shiny_mask] = [255, 255, 255]
     vis[unconditioned_mask] = [138, 73, 138]
-    
+
     # Strict Mask Application: Force the expanded buffer to solid black
-    vis[black_mask_bool] = [0, 0, 0]
+    # vis[black_mask_bool] = [0, 0, 0]
 
     vis = cv2.bitwise_and(vis, vis, mask=mask)
-    cv2.imwrite("images/4_final_segmentation.jpg", vis)
+    cv2.imwrite("res/4_final_segmentation.jpg", vis)
 
     # ==========================================
     # Output Calculations (Updated Metrics)
     # ==========================================
     total_disc_area = np.sum(mask_bool)
-    
+
     # The black area now correctly includes all buffer pixels
-    black_area = np.sum(black_mask_bool) 
-    
+    black_area = np.sum(black_mask_bool)
+
     # Surface area strictly excludes the expanded grooves
     surface_area = total_disc_area - black_area
 
@@ -131,6 +142,7 @@ def process_switchgear_disc(image_path):
     print(f"Shiny Area: {abs_shiny:.2f}%")
     print(f"Unconditioned Area: {abs_uncond:.2f}%")
     print(f"Black Grooves Area: {abs_black:.2f}%\n")
+
 
 if __name__ == "__main__":
     process_switchgear_disc("Bild.jpg")
