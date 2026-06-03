@@ -92,6 +92,35 @@ def process_switchgear_disc(image_path):
     # Save a copy to the output folder for your records
     cv2.imwrite("results/3_black_grooves_mask.jpg", binary_mask)
 
+
+
+    '''
+    # load both masks
+    manual_grooves = cv2.imread("grooves_mask.png", cv2.IMREAD_GRAYSCALE)
+    manual_center = cv2.imread("center_mask.png", cv2.IMREAD_GRAYSCALE)
+    
+    _, grooves_binary = cv2.threshold(manual_grooves, 127, 255, cv2.THRESH_BINARY)
+    _, center_binary = cv2.threshold(manual_center, 127, 255, cv2.THRESH_BINARY)
+    
+    grooves_bool = grooves_binary > 0
+    center_bool = center_binary > 0
+    
+    # exclude both the grooves and the center from the clustering surface
+    exclusion_zone = grooves_bool | center_bool
+    surface_mask = mask_bool & (~exclusion_zone)
+    
+    # ... [run your kmeans clustering on surface_mask as normal here] ...
+    
+    # apply colours to the clustered pixels
+    vis[shiny_mask] = [255, 255, 255]
+    vis[unconditioned_mask] = [138, 73, 138]
+    
+    # force the center to be white
+    vis[center_bool] = [255, 255, 255]
+    
+    # force the grooves to be black (this goes last so it overwrites any overlaps)
+    vis[grooves_bool] = [0, 0, 0]'''
+
     # ==========================================
     # 4. Surface Segmentation (3-Cluster Logic)
     # ==========================================
