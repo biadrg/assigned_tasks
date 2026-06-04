@@ -60,23 +60,27 @@ mask_circle = mask > 0  # binary to boolean for masking
 img_masked = cv2.bitwise_and(img, img, mask=mask.astype(np.uint8))
 cv2.imwrite("images4/5_image_masked.jpg", img_masked)
 
+img_smoothed = cv2.bilateralFilter(img_masked, d=15, sigmaColor=80, sigmaSpace=80)
+cv2.imwrite("images4/5_image_smoothed.jpg", img_smoothed)
+
 # adjust image parameters
-alpha = 2.0  # contrast multiplier
-beta = -100  # brightness offset => darker
+alpha = 1.8  # contrast multiplier
+beta = -50  # brightness offset => darker
 img_adjusted = cv2.convertScaleAbs(img_masked, alpha=alpha, beta=beta)
 img_adjusted = cv2.bitwise_and(img_adjusted, img_adjusted, mask=mask.astype(np.uint8))
 cv2.imwrite("images4/6_image_adjusted.jpg", img_adjusted)
+
 
 # convert BGR image to LAB color space for clustering
 lab = cv2.cvtColor(img_adjusted, cv2.COLOR_BGR2LAB)
 
 # apply mask for lines
-black_mask = cv2.imread("set_mask.jpg", cv2.IMREAD_GRAYSCALE)
+black_mask = cv2.imread("manual_mask.jpg", cv2.IMREAD_GRAYSCALE)
 _, binary_mask = cv2.threshold(black_mask, 127, 255, cv2.THRESH_BINARY)
 black_mask = binary_mask > 0
 cv2.imwrite("images4/7_image_mask.jpg", (black_mask.astype(np.uint8) * 255))
 
-# apply center mask
+# apply center mask nope
 
 # 2D image to 1D array for clustering
 pixels = lab.reshape(-1, 3)
@@ -133,17 +137,24 @@ white_mask &= ~black_margin
 
 #  area measurements
 black_pixels = np.sum(black_mask)
-total_pixels = np.sum(mask_circle)
-total_pixels -= black_pixels
 white_pixels = np.sum(white_mask)
 edge_pixels = np.sum(target_mask)
 
-white_pct = 100 * white_pixels / total_pixels if total_pixels > 0 else 0
-edge_pct = 100 * edge_pixels / total_pixels if total_pixels > 0 else 0
+# Calculate percentages using only active pixels (shiny + unconditioned)
+# This ensures they sum to exactly 100%
+active_pixels = white_pixels + edge_pixels
+
+if active_pixels > 0:
+    white_pct = 100 * white_pixels / active_pixels
+    edge_pct = 100 * edge_pixels / active_pixels
+else:
+    white_pct = 0
+    edge_pct = 0
 
 print("\nResults:")
-print(f"White pixels: {white_pct:.2f}%")  # Shiny/conditioned percentage
-print(f"Edge pixels: {edge_pct:.2f}%\n")  # Unconditioned/rough percentage
+print(f"Shiny area: {white_pct:.2f}%")  # Shiny/conditioned percentage
+print(f"Unconditioned area: {edge_pct:.2f}%\n")  # Unconditioned/rough percentage
+# print(f"Sum: {white_pct + edge_pct:.2f}%\n")  # Should equal 100%
 
 vis = np.zeros((height, width, 3), dtype=np.uint8)
 vis[white_mask] = [255, 255, 255]  # White

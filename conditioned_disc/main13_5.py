@@ -5,8 +5,8 @@ from sklearn.cluster import KMeans
 
 
 def process_switchgear_disc(image_path):
-    if not os.path.exists("images13"):
-        os.makedirs("images13")
+    if not os.path.exists("images13_5"):
+        os.makedirs("images13_5")
 
     img = cv2.imread(image_path)
     if img is None:
@@ -40,7 +40,7 @@ def process_switchgear_disc(image_path):
     mask_bool = mask > 0
 
     img_masked = cv2.bitwise_and(img, img, mask=mask)
-    cv2.imwrite("images13/1_image_masked.jpg", img_masked)
+    cv2.imwrite("images13_5/1_image_masked.jpg", img_masked)
 
     # ==========================================
     # 2. Advanced Preprocessing (Bilateral + CLAHE)
@@ -52,7 +52,7 @@ def process_switchgear_disc(image_path):
     img_clahe = clahe.apply(smoothed)
 
     img_clahe_masked = cv2.bitwise_and(img_clahe, img_clahe, mask=mask)
-    cv2.imwrite("images13/2_image_adjusted.jpg", img_clahe_masked)
+    cv2.imwrite("images13_5/2_image_adjusted.jpg", img_clahe_masked)
 
     # ==========================================
     # 3. Robust Black Groove Isolation
@@ -79,17 +79,17 @@ def process_switchgear_disc(image_path):
     # manual_mask_path = "manual_mask.jpg"
 
     manual_grooves = cv2.imread("manual_mask.jpg", cv2.IMREAD_GRAYSCALE)
-    # manual_center = cv2.imread("center_mask_optimised.jpg", cv2.IMREAD_GRAYSCALE)
+    manual_center = cv2.imread("center_mask_optimised.jpg", cv2.IMREAD_GRAYSCALE)
 
     # manual_mask = cv2.imread(manual_mask_path, cv2.IMREAD_GRAYSCALE)
 
     _, grooves_binary = cv2.threshold(manual_grooves, 127, 255, cv2.THRESH_BINARY)
-    # _, center_binary = cv2.threshold(manual_center, 127, 255, cv2.THRESH_BINARY)
+    _, center_binary = cv2.threshold(manual_center, 127, 255, cv2.THRESH_BINARY)
 
     grooves_bool = grooves_binary > 0
-    # center_bool = center_binary > 0
+    center_bool = center_binary > 0
 
-    exclusion_zone = grooves_bool
+    exclusion_zone = grooves_bool | center_bool
     surface_mask = mask_bool & (~exclusion_zone)
 
     # if manual_mask is None:
@@ -108,7 +108,7 @@ def process_switchgear_disc(image_path):
     # ==========================================
     # 4. Surface Segmentation (3-Cluster Logic)
     # ==========================================
-    surface_mask = mask_bool & (~grooves_bool)
+    surface_mask = mask_bool & (~grooves_bool) & (~center_bool)
     pixels_to_cluster = img_clahe_masked[surface_mask].reshape(-1, 1)
 
     # Increase to 3 clusters to catch mid-tone noise separately
@@ -142,13 +142,13 @@ def process_switchgear_disc(image_path):
     vis[unconditioned_mask] = [138, 73, 138]
 
     # force the center to be white
-    # vis[center_bool] = [255, 255, 255]
+    vis[center_bool] = [255, 255, 255]
 
     # force the grooves to be black (this goes last so it overwrites any overlaps)
     vis[grooves_bool] = [0, 0, 0]
 
     vis = cv2.bitwise_and(vis, vis, mask=mask)
-    cv2.imwrite("images13/4_image_highligthed.jpg", vis)
+    cv2.imwrite("images13_5/4_image_highligthed.jpg", vis)
 
     # ==========================================
     # Output Calculations
