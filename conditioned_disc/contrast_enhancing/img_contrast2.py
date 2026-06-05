@@ -7,7 +7,7 @@ os.makedirs("contrast2", exist_ok=True)
 
 try:
     # Load the image and convert to grayscale
-    img = Image.open("../images4/5_image_masked.jpg")
+    img = Image.open("../og_image_completely_masked.jpg")
     gray_np = np.array(img.convert("L"))
 
     # Get dimensions and initialise an empty RGB array

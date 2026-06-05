@@ -6,11 +6,11 @@ import numpy as np
 os.makedirs("contrast1", exist_ok=True)
 
 # Load the image
-img = cv2.imread("../images4/5_image_masked.jpg")
+img = cv2.imread("../og_image_completely_masked.jpg")
 
 if img is None:
     print(
-        "Error: Could not find '../images4/5_image_masked.jpg'. Please check the path."
+        "Error: Could not find '../og_image_completely_masked.jpg'. Please check the path."
     )
 else:
     # Convert to grayscale to assess brightness levels
