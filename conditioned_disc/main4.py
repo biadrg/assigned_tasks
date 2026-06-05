@@ -9,8 +9,9 @@ import numpy as np
 from sklearn.cluster import KMeans  # clustering algorithm for pixel segmentation
 import matplotlib.pyplot as plt
 
-if not os.path.exists("images4"):
-    os.makedirs("images4")
+output_dir = "images4_gen_0"
+if not os.path.exists(output_dir):
+    os.makedirs(output_dir)
 
 
 img = cv2.imread("Bild.jpg")  # BGR format
@@ -19,9 +20,9 @@ img_gray = cv2.cvtColor(
 )  # grayscale for circle detection and intensity-based analysis
 img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)  # RGB for visualizations
 
-cv2.imwrite("images4/1_image.jpg", img)  # BGR image
-cv2.imwrite("images4/2_image_gray.jpg", img_gray)  # grayscale version
-cv2.imwrite("images4/3_image_rgb.jpg", img_rgb)  # RGB version
+cv2.imwrite(f"{output_dir}/1_image.jpg", img)  # BGR image
+cv2.imwrite(f"{output_dir}/2_image_gray.jpg", img_gray)  # grayscale version
+cv2.imwrite(f"{output_dir}/3_image_rgb.jpg", img_rgb)  # RGB version
 
 # extract image dimensions, ignore color channels
 height, width = img_rgb.shape[:2]
@@ -29,7 +30,7 @@ height, width = img_rgb.shape[:2]
 
 # Gaussian blur to reduce noise before circle detection (kernel size for more blur, standard deviation controls blur intensity)
 blur1 = cv2.GaussianBlur(img_gray, (9, 9), 2)
-cv2.imwrite("images4/4_image_blur.jpg", blur1)
+cv2.imwrite(f"{output_dir}/4_image_blur.jpg", blur1)
 
 
 # detect circular edges
@@ -58,17 +59,17 @@ mask_circle = mask > 0  # binary to boolean for masking
 
 # apply mask to isolate the disc region
 img_masked = cv2.bitwise_and(img, img, mask=mask.astype(np.uint8))
-cv2.imwrite("images4/5_image_masked.jpg", img_masked)
+cv2.imwrite(f"{output_dir}/5_image_masked.jpg", img_masked)
 
 img_smoothed = cv2.bilateralFilter(img_masked, d=15, sigmaColor=80, sigmaSpace=80)
-cv2.imwrite("images4/5_image_smoothed.jpg", img_smoothed)
+cv2.imwrite(f"{output_dir}/5_image_smoothed.jpg", img_smoothed)
 
 # adjust image parameters
 alpha = 1.8  # contrast multiplier
 beta = -50  # brightness offset => darker
 img_adjusted = cv2.convertScaleAbs(img_masked, alpha=alpha, beta=beta)
 img_adjusted = cv2.bitwise_and(img_adjusted, img_adjusted, mask=mask.astype(np.uint8))
-cv2.imwrite("images4/6_image_adjusted.jpg", img_adjusted)
+cv2.imwrite(f"{output_dir}/6_image_adjusted.jpg", img_adjusted)
 
 
 # convert BGR image to LAB color space for clustering
@@ -78,7 +79,7 @@ lab = cv2.cvtColor(img_adjusted, cv2.COLOR_BGR2LAB)
 black_mask = cv2.imread("manual_mask.jpg", cv2.IMREAD_GRAYSCALE)
 _, binary_mask = cv2.threshold(black_mask, 127, 255, cv2.THRESH_BINARY)
 black_mask = binary_mask > 0
-cv2.imwrite("images4/7_image_mask.jpg", (black_mask.astype(np.uint8) * 255))
+cv2.imwrite(f"{output_dir}/7_image_mask.jpg", (black_mask.astype(np.uint8) * 255))
 
 # apply center mask nope
 
@@ -172,4 +173,4 @@ vis[target_mask] = [138, 73, 138]  # Purple
 vis[black_mask] = [0, 0, 0]  # Black
 
 vis_circle = cv2.bitwise_and(vis, vis, mask=mask.astype(np.uint8))
-cv2.imwrite("images4/8_image_highlighted.jpg", vis_circle)
+cv2.imwrite(f"{output_dir}/8_image_highlighted.jpg", vis_circle)
